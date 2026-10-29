@@ -1,0 +1,6 @@
+apiVersion: v2
+name: microservice
+description: One chart for every MediaHub service. A service is described only by its values file.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,72 @@
+# Single-node MongoDB for the local cluster. Deliberately minimal and unauthenticated in week 2;
+# week 3 adds credentials via Sealed Secrets and a NetworkPolicy so only catalog-service can connect.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  labels:
+    app.kubernetes.io/name: mongodb
+spec:
+  clusterIP: None   # headless: stable DNS per StatefulSet pod
+  selector:
+    app.kubernetes.io/name: mongodb
+  ports:
+    - name: mongodb
+      port: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  labels:
+    app.kubernetes.io/name: mongodb
+spec:
+  serviceName: mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongodb
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999      # the mongodb user in the official image
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mongodb
+          image: mongo:8.0
+          args: ["--wiredTigerCacheSizeGB", "0.25"]   # keep memory small on a laptop
+          ports:
+            - name: mongodb
+              containerPort: 27017
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

@@ -1,0 +1,51 @@
+{{- range .Values.applications }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .name }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .syncWave | default "0" | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .namespace | default $.Values.destinationNamespace }}
+  {{- if eq .kind "service" }}
+  # The shared chart plus this service's values file, both from the same repo.
+  sources:
+    - repoURL: {{ $.Values.repoURL }}
+      targetRevision: {{ $.Values.targetRevision }}
+      path: deploy/helm/microservice
+      helm:
+        releaseName: {{ .name }}
+        valueFiles:
+          - $values/deploy/gitops/apps/{{ $.Values.environment }}/values/{{ .name }}.yaml
+        parameters:
+          - name: image.repository
+            value: {{ $.Values.imageRegistry }}/{{ .name }}
+    - repoURL: {{ $.Values.repoURL }}
+      targetRevision: {{ $.Values.targetRevision }}
+      ref: values
+  {{- else }}
+  source:
+    repoURL: {{ $.Values.repoURL }}
+    targetRevision: {{ $.Values.targetRevision }}
+    path: {{ .path }}
+  {{- end }}
+  syncPolicy:
+    automated:
+      prune: true      # resources deleted from git are deleted from the cluster
+      selfHeal: true   # manual kubectl edits are reverted to what git says
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

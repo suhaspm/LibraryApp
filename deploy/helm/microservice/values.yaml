@@ -1,0 +1,64 @@
+# Defaults suit a Spring Boot service built from templates/spring-service.
+# Per-environment values live in deploy/gitops/apps/<env>/values/<service>.yaml.
+
+image:
+  repository: ghcr.io/OWNER/mediahub/catalog-service
+  tag: ""            # CI writes the git SHA here; empty falls back to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+ports:
+  http: 8080
+  management: 8081  # actuator: probes and metrics, never exposed through the gateway
+
+env: {}             # plain key/value environment variables
+envFromSecrets: []  # names of Secrets whose keys become env vars (e.g. credentials)
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 384Mi
+  limits:
+    memory: 512Mi   # no CPU limit on purpose: throttling hurts JVM startup more than it protects neighbours
+
+probes:
+  startup:
+    path: /actuator/health/liveness
+    failureThreshold: 30   # 30 x 5s = up to 150s for a cold JVM start on a small node
+    periodSeconds: 5
+  liveness:
+    path: /actuator/health/liveness
+    periodSeconds: 10
+  readiness:
+    path: /actuator/health/readiness
+    periodSeconds: 5
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8081"
+  prometheus.io/path: /actuator/prometheus
+
+serviceAccount:
+  create: true
+  automountToken: false   # services don't call the Kubernetes API
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Kubernetes Gateway API route (week 3 adds the Gateway itself).
+httpRoute:
+  enabled: false
+  gatewayName: mediahub
+  gatewayNamespace: gateway
+  hostnames: []
+  pathPrefix: /api
+
+terminationGracePeriodSeconds: 30

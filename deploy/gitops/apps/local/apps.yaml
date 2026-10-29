@@ -1,0 +1,9 @@
+# Passed to the root chart as a values file by the root Application.
+applications:
+  - name: mongodb
+    kind: manifests
+    path: deploy/gitops/platform/mongodb
+    syncWave: "-1"   # data stores before the services that need them
+
+  - name: catalog-service
+    kind: service

@@ -1,0 +1,18 @@
+# SFTP server for the keys lab (docs/labs/01-keys.md). Key-only login, no passwords.
+# Host keys live inside the container, so `docker compose down && docker compose up -d`
+# simulates a rebuilt server that comes back with a new host key.
+name: keys-lab
+
+services:
+  sftp:
+    image: linuxserver/openssh-server:latest
+    environment:
+      USER_NAME: partner
+      PUBLIC_KEY_FILE: /keys/partner_ed25519.pub   # the ONLY key allowed to log in as "partner"
+      PASSWORD_ACCESS: "false"
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      - ./out/partner_ed25519.pub:/keys/partner_ed25519.pub:ro
+    ports:
+      - "2222:2222"

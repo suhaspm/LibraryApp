@@ -1,0 +1,4 @@
+image:
+  tag: "0.1.0"   # updated by CI on every merge to main
+
+env: {}

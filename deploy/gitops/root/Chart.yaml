@@ -1,0 +1,5 @@
+apiVersion: v2
+name: mediahub-root
+description: App of apps. Renders one Argo CD Application per entry in apps/<env>/apps.yaml.
+type: application
+version: 0.1.0

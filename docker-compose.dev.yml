@@ -1,0 +1,32 @@
+# Fast local loop, without Kubernetes:
+#   ./gradlew :services:catalog-service:bootJar && docker compose -f docker-compose.dev.yml up --build
+# Infrastructure added in later weeks (Kafka, Postgres, Keycloak, OpenLDAP, SFTP) joins this file.
+name: mediahub
+
+services:
+  mongodb:
+    image: mongo:8.0
+    ports: ["27017:27017"]
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      retries: 20
+
+  catalog-service:
+    build:
+      context: services/catalog-service
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/catalog
+      SPRING_PROFILES_ACTIVE: sample-data
+    ports: ["8080:8080", "8081:8081"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+volumes:
+  mongo-data:

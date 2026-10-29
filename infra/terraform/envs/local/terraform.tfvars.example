@@ -1,0 +1,4 @@
+github_owner = "your-github-username"
+# github_repository = "mediahub"
+# target_revision   = "main"
+# worker_count      = 0

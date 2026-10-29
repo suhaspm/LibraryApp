@@ -1,0 +1,26 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.idea/
+*.iml
+.vscode/
+out/
+.DS_Store
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+.terraform.tfstate.lock.info
+
+# Kubeconfigs and keys produced by labs never belong in git
+*.kubeconfig
+kubeconfig*
+labs/**/out/
+*.pem
+*.key
+id_*
+!id_*.pub.example
