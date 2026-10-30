@@ -1,6 +1,5 @@
 image:
-  tag: "0.1.0"   # updated by CI on every merge to main
-
+  tag: "db7df12" # updated by CI on every merge to main
 env:
   MONGODB_URI: mongodb://mongodb.mediahub.svc.cluster.local:27017/catalog
   SPRING_PROFILES_ACTIVE: sample-data
