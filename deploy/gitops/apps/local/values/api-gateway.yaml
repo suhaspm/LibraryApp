@@ -1,0 +1,12 @@
+image:
+  tag: "0.1.0"   # updated by CI on every merge to main
+
+env:
+  OIDC_ISSUER: http://localhost/auth/realms/mediahub
+  OIDC_INTERNAL: http://keycloak.mediahub.svc.cluster.local:8080/auth/realms/mediahub
+  CATALOG_URL: http://catalog-service.mediahub.svc.cluster.local
+  REDIS_HOST: valkey.mediahub.svc.cluster.local
+
+# BFF_CLIENT_SECRET and REDIS_PASSWORD, created by Terraform.
+envFromSecrets:
+  - api-gateway-secrets
