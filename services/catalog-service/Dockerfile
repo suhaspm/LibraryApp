@@ -5,14 +5,14 @@
 
 # Runs on the CI machine's native platform even when building arm64: the jar is platform-neutral,
 # so there is no reason to run this step under slow QEMU emulation.
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-noble AS extract
+FROM --platform=$BUILDPLATFORM eclipse-temurin:24-jre-noble AS extract
 WORKDIR /work
 COPY build/libs/app.jar app.jar
 # Split the jar into layers (dependencies rarely change, application code often) so a
 # code-only change pushes a few hundred KB instead of the whole 40 MB.
 RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:24-jre-noble
 # Fixed non-root UID so Kubernetes can enforce runAsNonRoot without guessing.
 RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app --no-create-home app
 WORKDIR /app
