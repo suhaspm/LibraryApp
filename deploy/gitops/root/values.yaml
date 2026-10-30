@@ -1,8 +1,8 @@
 # Set by Terraform (argocd-bootstrap module) when it creates the root Application.
-repoURL: https://github.com/OWNER/mediahub.git
+repoURL: https://github.com/suhaspm/LibraryApp.git
 targetRevision: main
 environment: local
-imageRegistry: ghcr.io/owner/mediahub   # GHCR paths must be lowercase
+imageRegistry: ghcr.io/suhaspm/libraryapp   # GHCR paths must be lowercase
 destinationNamespace: mediahub
 
 applications: []

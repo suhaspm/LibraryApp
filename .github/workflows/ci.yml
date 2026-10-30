@@ -18,9 +18,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  REGISTRY: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
-
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -67,6 +64,10 @@ jobs:
         service: ${{ fromJson(needs.changes.outputs.services) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Registry paths must be lowercase; the repo is "LibraryApp", so derive it rather than hardcode it.
+      - name: Set image registry
+        run: echo "REGISTRY=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:

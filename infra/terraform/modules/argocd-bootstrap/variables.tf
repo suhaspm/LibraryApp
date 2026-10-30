@@ -15,7 +15,7 @@ variable "environment" {
 }
 
 variable "image_registry" {
-  description = "Registry prefix for service images, e.g. ghcr.io/<owner>/mediahub (lowercase)."
+  description = "Registry prefix for service images, e.g. ghcr.io/<owner>/<repo> (lowercase)."
   type        = string
 
   validation {

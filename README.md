@@ -47,17 +47,16 @@ curl "localhost:8080/api/v1/media?q=mann"             # Swagger UI: http://local
 ```
 
 ### 2. Put it on GitHub (once)
-Create an **empty public** repo named `mediahub` on GitHub, then:
+The code lives at https://github.com/suhaspm/LibraryApp (the project itself is called MediaHub).
 ```bash
-git remote add origin git@github.com:<you>/mediahub.git
-git push -u origin main
+git clone https://github.com/suhaspm/LibraryApp.git && cd LibraryApp
 ```
 Then let Terraform take over the repo's settings: branch ruleset, the deploy key CI uses to write
 GitOps commits, and vulnerability alerts. Use a fine-grained token scoped to just this repo with
 Administration, Secrets and Contents read/write:
 ```bash
 cd infra/terraform/envs/github
-cp terraform.tfvars.example terraform.tfvars          # set github_owner
+cp terraform.tfvars.example terraform.tfvars
 export GITHUB_TOKEN=github_pat_...
 terraform init && terraform apply
 ```
@@ -68,7 +67,7 @@ cluster can pull it without credentials.
 ### 3. Create the local cluster with Argo CD (needs Docker with ~10 GB RAM; no kind CLI needed, Terraform drives it)
 ```bash
 cd infra/terraform/envs/local
-cp terraform.tfvars.example terraform.tfvars          # set github_owner
+cp terraform.tfvars.example terraform.tfvars
 terraform init && terraform apply
 kubectl --context kind-mediahub get applications -n argocd
 kubectl --context kind-mediahub -n mediahub port-forward svc/catalog-service 8080:80

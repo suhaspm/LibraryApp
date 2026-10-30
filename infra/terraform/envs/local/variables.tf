@@ -6,7 +6,7 @@ variable "github_owner" {
 variable "github_repository" {
   description = "Repository name."
   type        = string
-  default     = "mediahub"
+  default     = "LibraryApp"
 }
 
 variable "target_revision" {

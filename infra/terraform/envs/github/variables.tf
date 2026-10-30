@@ -4,5 +4,5 @@ variable "github_owner" {
 
 variable "github_repository" {
   type    = string
-  default = "mediahub"
+  default = "LibraryApp"
 }

@@ -2,7 +2,7 @@
 # Per-environment values live in deploy/gitops/apps/<env>/values/<service>.yaml.
 
 image:
-  repository: ghcr.io/OWNER/mediahub/catalog-service
+  repository: ghcr.io/suhaspm/libraryapp/catalog-service
   tag: ""            # CI writes the git SHA here; empty falls back to .Chart.AppVersion
   pullPolicy: IfNotPresent
 
