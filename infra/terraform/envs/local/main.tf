@@ -22,3 +22,7 @@ module "argocd" {
   environment     = "local"
   image_registry  = lower("ghcr.io/${var.github_owner}/${var.github_repository}")
 }
+
+module "secrets" {
+  source = "../../modules/bootstrap-secrets"
+}

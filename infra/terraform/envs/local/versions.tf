@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 3.3"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.9"
+    }
   }
 
   # Local state on purpose for the laptop cluster: it is disposable and holds a cluster key.

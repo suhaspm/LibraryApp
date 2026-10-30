@@ -1,9 +1,18 @@
-# Fast local loop, without Kubernetes:
-#   ./gradlew :services:catalog-service:bootJar
+# Fast local loop, without Kubernetes. Everything is reached through one origin, http://localhost:3000:
+#   /        web-ui          /api, /oauth2, /login, /logout   api-gateway          /auth   Keycloak
+#
+#   scripts/dev-secrets.sh                                   (once: random passwords into .env)
+#   ./gradlew :services:catalog-service:bootJar :services:api-gateway:bootJar
 #   (cd services/web-ui && npm ci && npm run build)
 #   docker compose -f docker-compose.dev.yml up --build      then open http://localhost:3000
-# Infrastructure added in later weeks (Kafka, Postgres, Keycloak, OpenLDAP, SFTP) joins this file.
 name: mediahub
+
+x-oidc: &oidc
+  # What the browser sees and what tokens carry as "iss" ...
+  OIDC_ISSUER: http://localhost:3000/auth/realms/mediahub
+  # ... versus how containers reach Keycloak directly.
+  OIDC_INTERNAL: http://keycloak:8080/auth/realms/mediahub
+  OIDC_JWK_SET_URI: http://keycloak:8080/auth/realms/mediahub/protocol/openid-connect/certs
 
 services:
   mongodb:
@@ -15,16 +24,69 @@ services:
       interval: 5s
       retries: 20
 
+  valkey:
+    image: valkey/valkey:9.1-alpine
+    command: ["valkey-server", "--requirepass", "${VALKEY_PASSWORD:?run scripts/dev-secrets.sh first}", "--save", ""]
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"$$VALKEY_PASSWORD\" --no-auth-warning ping | grep PONG"]
+      interval: 5s
+      retries: 20
+    environment:
+      VALKEY_PASSWORD: ${VALKEY_PASSWORD}
+
+  keycloak:
+    image: keycloak/keycloak:26.8.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?run scripts/dev-secrets.sh first}
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME: http://localhost:3000/auth
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      # Placeholders in the realm file:
+      PUBLIC_URL: http://localhost:3000
+      BFF_CLIENT_SECRET: ${BFF_CLIENT_SECRET}
+      SERVICES_CLIENT_SECRET: ${SERVICES_CLIENT_SECRET}
+      MEMBER_PASSWORD: ${MEMBER_PASSWORD}
+      LIBRARIAN_PASSWORD: ${LIBRARIAN_PASSWORD}
+    volumes:
+      - ./deploy/gitops/platform/keycloak/realm-mediahub.json:/opt/keycloak/data/import/realm-mediahub.json:ro
+    ports: ["8180:8080"]   # direct access for the lab exercises
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /auth/health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 5s
+      retries: 60
+
   catalog-service:
     build:
       context: services/catalog-service
     environment:
+      <<: *oidc
       MONGODB_URI: mongodb://mongodb:27017/catalog
       SPRING_PROFILES_ACTIVE: sample-data
     ports: ["8080:8080", "8081:8081"]
     depends_on:
-      mongodb:
-        condition: service_healthy
+      mongodb: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  api-gateway:
+    build:
+      context: services/api-gateway
+    environment:
+      <<: *oidc
+      BFF_CLIENT_SECRET: ${BFF_CLIENT_SECRET}
+      REDIS_HOST: valkey
+      REDIS_PASSWORD: ${VALKEY_PASSWORD}
+      CATALOG_URL: http://catalog-service:8080
+    depends_on:
+      valkey: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
     deploy:
       resources:
         limits:
@@ -33,8 +95,11 @@ services:
   web-ui:
     build:
       context: services/web-ui
+    environment:
+      GATEWAY_URL: http://api-gateway:8080
+      KEYCLOAK_URL: http://keycloak:8080
     ports: ["3000:8080"]
-    depends_on: [catalog-service]
+    depends_on: [api-gateway, keycloak]
     # Same restrictions the Kubernetes pod runs with.
     read_only: true
     tmpfs: [/tmp]

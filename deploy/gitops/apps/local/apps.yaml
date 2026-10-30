@@ -1,11 +1,49 @@
 # Passed to the root chart as a values file by the root Application.
+# syncWave orders first-time creation: lower numbers are created first.
 applications:
+  # --- Edge: Kubernetes Gateway API, implemented by Envoy (week 3) ---
+  - name: envoy-gateway
+    kind: chart
+    namespace: envoy-gateway-system
+    repoURL: docker.io/envoyproxy          # OCI registry, registered in Argo CD by Terraform
+    chart: gateway-helm
+    version: v1.9.3
+    syncWave: "-3"
+    syncOptions:
+      - ServerSideApply=true                # the Gateway API CRDs are too large for client-side apply
+    values:
+      deployment:
+        envoyGateway:
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }
+
+  - name: edge
+    kind: manifests
+    path: deploy/gitops/platform/edge
+    syncWave: "-2"
+
+  # --- Data and identity ---
   - name: mongodb
     kind: manifests
     path: deploy/gitops/platform/mongodb
-    syncWave: "-1"   # data stores before the services that need them
+    syncWave: "-1"
 
+  - name: valkey
+    kind: manifests
+    path: deploy/gitops/platform/valkey
+    syncWave: "-1"
+
+  - name: keycloak
+    kind: manifests
+    path: deploy/gitops/platform/keycloak   # kustomize: the realm file becomes a ConfigMap
+    syncWave: "-1"
+
+  # --- MediaHub services ---
   - name: catalog-service
+    kind: service
+
+  - name: api-gateway
     kind: service
 
   - name: web-ui

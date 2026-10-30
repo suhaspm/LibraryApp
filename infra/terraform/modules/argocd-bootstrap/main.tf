@@ -24,6 +24,15 @@ resource "helm_release" "argocd" {
         # TLS is terminated by the gateway in front of Argo CD later; plain HTTP inside the cluster for now.
         "server.insecure" = true
       }
+      # Helm charts published to OCI registries must be registered before an Application can use them.
+      repositories = {
+        envoy-gateway = {
+          name      = "envoy-gateway"
+          type      = "helm"
+          url       = "docker.io/envoyproxy"
+          enableOCI = "true"
+        }
+      }
     }
     # Not needed locally and each costs memory.
     dex           = { enabled = false }

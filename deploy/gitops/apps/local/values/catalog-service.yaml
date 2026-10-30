@@ -3,3 +3,5 @@ image:
 env:
   MONGODB_URI: mongodb://mongodb.mediahub.svc.cluster.local:27017/catalog
   SPRING_PROFILES_ACTIVE: sample-data
+  OIDC_ISSUER: http://localhost/auth/realms/mediahub
+  OIDC_JWK_SET_URI: http://keycloak.mediahub.svc.cluster.local:8080/auth/realms/mediahub/protocol/openid-connect/certs

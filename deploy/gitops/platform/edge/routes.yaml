@@ -1,0 +1,34 @@
+# Everything under http://localhost, by path. One origin for the browser means no CORS,
+# and cookies (the session, Keycloak's SSO cookie) just work.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mediahub
+  namespace: mediahub
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  parentRefs:
+    - name: mediahub
+  rules:
+    # Identity provider: login pages, token endpoint, account console, admin console
+    - matches:
+        - path: { type: PathPrefix, value: /auth }
+      backendRefs:
+        - name: keycloak
+          port: 8080
+    # Backend-for-frontend: API calls plus the OAuth login/logout handshake
+    - matches:
+        - path: { type: PathPrefix, value: /api }
+        - path: { type: PathPrefix, value: /oauth2 }
+        - path: { type: PathPrefix, value: /login }
+        - path: { type: PathPrefix, value: /logout }
+      backendRefs:
+        - name: api-gateway
+          port: 80
+    # Everything else is the single-page app
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: web-ui
+          port: 80

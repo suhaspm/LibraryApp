@@ -1,0 +1,98 @@
+# Keycloak in dev mode with an in-memory/file database: the realm is re-imported from git on
+# every start, so nothing is lost that matters. Users who self-register are lost on restart;
+# week 5 moves Keycloak onto PostgreSQL (CloudNativePG) and runs it in production mode.
+# Secrets (admin password, client secrets, test-user passwords) come from the keycloak-secrets
+# Secret, created by Terraform (infra/terraform/modules/bootstrap-secrets), never from git.
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+spec:
+  selector:
+    app.kubernetes.io/name: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # one instance at a time while it uses a local database
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.8.1
+          args: ["start-dev", "--import-realm"]
+          env:
+            - name: KC_HTTP_RELATIVE_PATH
+              value: /auth
+            # Tokens carry this as "iss"; it is what the browser uses.
+            - name: KC_HOSTNAME
+              value: http://localhost/auth
+            # ...while calls from inside the cluster (token exchange, keys) may use the internal address.
+            - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+              value: "true"
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: PUBLIC_URL      # placeholder in the realm file
+              value: http://localhost
+          envFrom:
+            - secretRef:
+                name: keycloak-secrets
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9000
+          startupProbe:
+            httpGet: { path: /auth/health/started, port: management }
+            periodSeconds: 5
+            failureThreshold: 60   # first start (build + import) can take a couple of minutes
+          readinessProbe:
+            httpGet: { path: /auth/health/ready, port: management }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /auth/health/live, port: management }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm
+          configMap:
+            name: keycloak-realm
