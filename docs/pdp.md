@@ -26,7 +26,7 @@ generic concepts privately, not in this public repo.
 |---|---|---|
 | 1 | 3 Nov | Keys lab · catalog-service · Docker (AWS training part 2 also this week) |
 | 2 | 10 Nov | Walking skeleton: CI → GHCR → Terraform kind + GitHub → Argo CD |
-| 3 | 17 Nov | Keycloak, OAuth2/OIDC login, gateway, roles, 401 vs 403 |
+| 3 | 17 Nov | Keycloak, OAuth2/OIDC login, gateway, roles, 401 vs 403 — **built early (30 Oct); do Lab 03** |
 | 4 | 24 Nov | LDAP federation, SAML, mobile SSO, IAM admin API |
 | 5 | 1 Dec | Kafka, inventory, rentals in arrival order, due dates |
 | 6 | 8 Dec | gRPC, HTTP/2, protocol lab |
