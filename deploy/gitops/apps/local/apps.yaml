@@ -7,3 +7,6 @@ applications:
 
   - name: catalog-service
     kind: service
+
+  - name: web-ui
+    kind: service

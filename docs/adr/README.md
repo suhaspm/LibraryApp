@@ -12,3 +12,4 @@ accepted ADR's decision: supersede it with a new one.
 | [0004](0004-terraform-bootstraps-gitops-deploys.md) | Terraform bootstraps, Argo CD deploys | Accepted |
 | [0005](0005-spring-boot-4.md) | Spring Boot 4.1 on Java 21 | Accepted |
 | [0006](0006-supply-chain-hardening.md) | Supply-chain hardening from day one | Accepted |
+| [0007](0007-web-ui-same-origin-proxy.md) | Web UI served by nginx, which also proxies the API | Accepted |
