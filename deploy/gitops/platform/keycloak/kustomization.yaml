@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mediahub
+resources:
+  - keycloak.yaml
+# The realm file becomes a ConfigMap. Its name gets a content hash, so editing the realm
+# changes the Deployment and Keycloak restarts and re-imports it.
+configMapGenerator:
+  - name: keycloak-realm
+    files:
+      - realm-mediahub.json

@@ -3,8 +3,8 @@
 #   scripts/new-service.sh rental-service
 set -euo pipefail
 
-name="${1:?usage: $0 <name>-service}"
-[[ "$name" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*-service$ ]] || { echo "name must be kebab-case and end in -service" >&2; exit 1; }
+name="${1:?usage: $0 <name> (e.g. rental-service, api-gateway)}"
+[[ "$name" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]] || { echo "name must be kebab-case" >&2; exit 1; }
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 target="$root/services/$name"

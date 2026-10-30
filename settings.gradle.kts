@@ -15,9 +15,11 @@ dependencyResolutionManagement {
     }
 }
 
-// Every directory under services/ with a build file becomes a subproject, so adding a
-// service never requires editing this file (see templates/spring-service).
-file("services").listFiles()
-    ?.filter { File(it, "build.gradle.kts").exists() }
-    ?.sorted()
-    ?.forEach { include(":services:${it.name}") }
+// Every directory under services/ or libs/ with a build file becomes a subproject, so adding
+// a service or library never requires editing this file (see templates/spring-service).
+for (group in listOf("libs", "services")) {
+    file(group).listFiles()
+        ?.filter { File(it, "build.gradle.kts").exists() }
+        ?.sorted()
+        ?.forEach { include(":$group:${it.name}") }
+}

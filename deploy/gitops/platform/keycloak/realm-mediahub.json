@@ -1,0 +1,137 @@
+{
+  "realm": "mediahub",
+  "displayName": "MediaHub Library",
+  "enabled": true,
+
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "rememberMe": true,
+  "resetPasswordAllowed": false,
+  "verifyEmail": false,
+
+  "passwordPolicy": "length(12) and notUsername and notEmail",
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "permanentLockout": false,
+
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+
+  "roles": {
+    "realm": [
+      { "name": "MEMBER", "description": "Library member: browse, borrow, return, pay dues" },
+      {
+        "name": "LIBRARIAN",
+        "description": "Staff: manage the catalog and copies (includes everything a member can do)",
+        "composite": true,
+        "composites": { "realm": ["MEMBER"] }
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-mediahub",
+    "description": "Given to every new account, including self-registered ones",
+    "composite": true,
+    "composites": {
+      "realm": ["MEMBER", "offline_access", "uma_authorization"],
+      "client": { "account": ["view-profile", "manage-account"] }
+    }
+  },
+
+  "clients": [
+    {
+      "clientId": "mediahub-bff",
+      "name": "MediaHub web (backend-for-frontend)",
+      "description": "The api-gateway logs users in on behalf of the browser and keeps their tokens server-side.",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${BFF_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": ["${PUBLIC_URL}/login/oauth2/code/keycloak"],
+      "webOrigins": ["${PUBLIC_URL}"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${PUBLIC_URL}/"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience: mediahub-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "mediahub-api", "access.token.claim": "true", "id.token.claim": "false" }
+        },
+        {
+          "name": "realm roles in ID token",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_access.roles", "multivalued": "true", "jsonType.label": "String",
+            "access.token.claim": "true", "id.token.claim": "true", "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "mediahub-services",
+      "name": "MediaHub services (machine to machine)",
+      "description": "For service-to-service calls with the client credentials grant (lab 03).",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${SERVICES_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "audience: mediahub-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.custom.audience": "mediahub-api", "access.token.claim": "true", "id.token.claim": "false" }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "member1",
+      "enabled": true,
+      "email": "member1@mediahub.local",
+      "emailVerified": true,
+      "firstName": "Mia",
+      "lastName": "Member",
+      "credentials": [{ "type": "password", "value": "${MEMBER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-mediahub"]
+    },
+    {
+      "username": "librarian1",
+      "enabled": true,
+      "email": "librarian1@mediahub.local",
+      "emailVerified": true,
+      "firstName": "Lars",
+      "lastName": "Librarian",
+      "credentials": [{ "type": "password", "value": "${LIBRARIAN_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-mediahub", "LIBRARIAN"],
+      "requiredActions": ["CONFIGURE_TOTP"]
+    }
+  ]
+}

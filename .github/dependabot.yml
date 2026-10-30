@@ -14,6 +14,13 @@ updates:
     groups:
       spring:
         patterns: ["org.springframework*", "io.spring*"]
+  - package-ecosystem: npm
+    directory: /services/web-ui
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]
   - package-ecosystem: docker
     directories: ["/services/*"]
     schedule:

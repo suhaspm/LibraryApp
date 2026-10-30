@@ -30,6 +30,18 @@ spec:
     - repoURL: {{ $.Values.repoURL }}
       targetRevision: {{ $.Values.targetRevision }}
       ref: values
+  {{- else if eq .kind "chart" }}
+  # A third-party Helm chart (e.g. Envoy Gateway), pinned to an exact version.
+  source:
+    repoURL: {{ .repoURL }}
+    chart: {{ .chart }}
+    targetRevision: {{ .version }}
+    helm:
+      releaseName: {{ .name }}
+      {{- with .values }}
+      valuesObject:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
   {{- else }}
   source:
     repoURL: {{ $.Values.repoURL }}
@@ -42,6 +54,9 @@ spec:
       selfHeal: true   # manual kubectl edits are reverted to what git says
     syncOptions:
       - CreateNamespace=true
+      {{- range .syncOptions }}
+      - {{ . }}
+      {{- end }}
     retry:
       limit: 5
       backoff:

@@ -1,0 +1,26 @@
+image:
+  tag: "0.1.0"   # updated by CI on every merge to main
+
+env:
+  # In the cluster Envoy routes /api and /auth before they reach web-ui; these are only used if
+  # someone port-forwards straight to web-ui. nginx ignores DNS search domains: full names needed.
+  GATEWAY_URL: http://api-gateway.mediahub.svc.cluster.local
+  KEYCLOAK_URL: http://keycloak.mediahub.svc.cluster.local:8080
+
+probes:
+  startup:
+    path: /healthz
+  liveness:
+    path: /healthz
+  readiness:
+    path: /healthz
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 64Mi
+
+podAnnotations:
+  prometheus.io/scrape: "false"   # static site: no metrics endpoint

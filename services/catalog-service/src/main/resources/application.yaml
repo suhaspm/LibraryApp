@@ -35,6 +35,14 @@ management:
     key-values:
       application: ${spring.application.name}
 
+mediahub:
+  security:
+    # What Keycloak writes into tokens: the address the browser uses.
+    issuer: ${OIDC_ISSUER:http://localhost:3000/auth/realms/mediahub}
+    # Where to fetch Keycloak's public keys from, as seen from this service.
+    jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8180/auth/realms/mediahub/protocol/openid-connect/certs}
+    audience: mediahub-api
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

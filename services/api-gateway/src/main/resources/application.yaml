@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: api-gateway
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    # Spring Cloud 2025.1 declares support for Boot 4.0; we run it on 4.1 deliberately (docs/adr/0008).
+    compatibility-verifier:
+      enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+  session:
+    timeout: 30m
+    redis:
+      namespace: mediahub:session
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+server:
+  port: 8080
+  shutdown: graceful
+  # Behind nginx/Envoy: build redirect URLs from X-Forwarded-* (http://localhost), not the pod's own address.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        name: MEDIAHUB_SESSION
+        http-only: true      # JavaScript can't read it, so XSS can't steal the session
+        same-site: lax       # not sent on cross-site POSTs: a second layer against CSRF
+
+mediahub:
+  bff:
+    client-id: mediahub-bff
+    client-secret: ${BFF_CLIENT_SECRET}
+    issuer: ${OIDC_ISSUER:http://localhost:3000/auth/realms/mediahub}
+    internal-issuer: ${OIDC_INTERNAL:http://localhost:8180/auth/realms/mediahub}
+  routes:
+    catalog: ${CATALOG_URL}
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

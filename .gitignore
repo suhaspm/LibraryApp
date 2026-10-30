@@ -24,3 +24,6 @@ labs/**/out/
 *.key
 id_*
 !id_*.pub.example
+
+# Local secrets (scripts/dev-secrets.sh)
+.env

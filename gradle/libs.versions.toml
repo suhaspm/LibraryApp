@@ -2,8 +2,11 @@
 spring-boot = "4.1.2"
 spring-dependency-management = "1.1.7"
 springdoc = "3.2.0"
+# 2026.0 (the train built for Boot 4.1) has no GA yet; 2025.1 is verified against Boot 4.1 by our tests (docs/adr/0008).
+spring-cloud = "2025.1.4"
 
 [libraries]
+spring-cloud-bom = { module = "org.springframework.cloud:spring-cloud-dependencies", version.ref = "spring-cloud" }
 springdoc-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
 # Used by build-logic to apply plugins from the convention plugin.
