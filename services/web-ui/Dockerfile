@@ -3,6 +3,12 @@
 # Same pattern as the Java services: build outside, package only the output.
 FROM nginxinc/nginx-unprivileged:1.30-alpine
 
+# The base image is only rebuilt every few weeks, so its Alpine packages lag behind security
+# fixes (the CI scan caught a critical brotli CVE this way). Upgrading at build time picks up
+# Alpine's patches; removing curl drops a tool nginx never uses but an attacker would.
+USER root
+RUN apk upgrade --no-cache && apk del --no-cache curl
+
 ENV NGINX_ENVSUBST_OUTPUT_DIR=/tmp \
     NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 \
     CATALOG_URL=http://catalog-service:8080
