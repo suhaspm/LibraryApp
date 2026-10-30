@@ -20,3 +20,14 @@ test('handles empty 204 responses', async () => {
   mockFetch(() => new Response(null, { status: 204 }))
   await expect(catalogApi.remove('x')).resolves.toBeUndefined()
 })
+
+test('sends the CSRF token on writes but not on reads', async () => {
+  document.cookie = 'XSRF-TOKEN=abc%2D123'
+  const fetch = mockFetch(() => jsonResponse({ id: '1' }, 201))
+  await catalogApi.create({ type: 'BOOK', title: 'T', creators: ['C'] })
+  await catalogApi.get('1')
+  const headers = (i: number) => fetch.mock.calls[i][1]!.headers as Record<string, string>
+  expect(headers(0)['X-XSRF-TOKEN']).toBe('abc-123')
+  expect(headers(1)['X-XSRF-TOKEN']).toBeUndefined()
+  document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+})

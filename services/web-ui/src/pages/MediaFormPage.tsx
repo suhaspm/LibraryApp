@@ -2,15 +2,32 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { catalogApi } from '../api/client'
+import { LOGIN_URL } from '../api/client'
 import { MEDIA_TYPES, type Media, type MediaRequest, type MediaType } from '../api/types'
+import { useMe } from '../auth'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { TYPE_LABELS } from '../format'
 
 /** Create when there is no :id in the URL, edit otherwise. */
 export function MediaFormPage() {
   const { id } = useParams()
+  const { me, isLibrarian } = useMe()
   const existing = useQuery({ queryKey: ['media', id], queryFn: () => catalogApi.get(id!), enabled: !!id })
 
+  if (!isLibrarian) {
+    return (
+      <section className="coming-soon">
+        <h1>Librarians only</h1>
+        {me.authenticated ? (
+          <p>Your account can browse and borrow, but only librarians can change the catalog.</p>
+        ) : (
+          <p>
+            <a href={LOGIN_URL}>Sign in</a> with a librarian account to add or edit media.
+          </p>
+        )}
+      </section>
+    )
+  }
   if (id && existing.isPending) return <p className="muted">Loading…</p>
   if (id && existing.error) return <ErrorMessage error={existing.error} />
   // key: remount the form when the loaded item changes, so its initial state is correct.

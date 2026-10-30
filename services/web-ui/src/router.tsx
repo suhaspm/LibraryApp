@@ -31,15 +31,6 @@ export const routes = [
           </ComingSoonPage>
         ),
       },
-      {
-        path: 'login',
-        element: (
-          <ComingSoonPage title="Sign in" week={3}>
-            Single sign-on with Keycloak (OAuth 2.0 / OpenID Connect), including two-factor login. Members
-            will see their own rentals; only librarians will be able to add or edit media.
-          </ComingSoonPage>
-        ),
-      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

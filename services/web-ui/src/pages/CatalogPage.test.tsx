@@ -31,5 +31,5 @@ test('lists media and filters by type', async () => {
 test('explains when the service is unreachable', async () => {
   vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))))
   renderAt('/')
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the catalog service')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach MediaHub')
 })

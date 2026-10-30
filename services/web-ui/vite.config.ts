@@ -8,7 +8,8 @@ export default defineConfig({
     // In dev, /api goes to the catalog-service port-forward (localhost:8080), the same path
     // nginx proxies in the cluster, so the browser never needs CORS.
     proxy: {
-      '/api': process.env.API_URL ?? 'http://localhost:8080',
+      // Everything the gateway or Keycloak serves; run the compose stack (port 3000) behind it.
+      '^/(api|oauth2|login|logout|auth)(/|$)': { target: process.env.API_URL ?? 'http://localhost:3000', changeOrigin: false },
     },
   },
   test: {

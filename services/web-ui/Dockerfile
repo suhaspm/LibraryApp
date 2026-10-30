@@ -11,7 +11,8 @@ RUN apk upgrade --no-cache && apk del --no-cache curl
 
 ENV NGINX_ENVSUBST_OUTPUT_DIR=/tmp \
     NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 \
-    CATALOG_URL=http://catalog-service:8080
+    GATEWAY_URL=http://api-gateway:8080 \
+    KEYCLOAK_URL=http://keycloak:8080
 
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template

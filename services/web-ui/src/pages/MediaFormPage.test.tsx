@@ -9,10 +9,11 @@ test('sends a well-formed request and opens the new item', async () => {
     init?.method === 'POST'
       ? jsonResponse({ id: 'new-1', ...JSON.parse(String(init.body)) }, 201)
       : jsonResponse({ id: 'new-1', type: 'BOOK', title: 'Der Process', creators: ['Franz Kafka'], genres: [], attributes: {}, rentalFee: 0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }),
+    'librarian',
   )
   const router = renderAt('/media/new')
 
-  await userEvent.type(screen.getByLabelText(/^Title/), 'Der Process')
+  await userEvent.type(await screen.findByLabelText(/^Title/), 'Der Process')
   await userEvent.type(screen.getByLabelText(/^Creators/), 'Franz Kafka, Max Brod')
   await userEvent.click(screen.getByRole('button', { name: 'Add detail' }))
   await userEvent.type(screen.getByLabelText('Detail name'), 'pages')
@@ -28,12 +29,13 @@ test('sends a well-formed request and opens the new item', async () => {
 })
 
 test('shows field errors returned by the service', async () => {
-  mockFetch(() =>
-    jsonResponse({ title: 'Bad Request', detail: 'Invalid request content.', errors: [{ field: 'language', defaultMessage: 'size must be between 2 and 2' }] }, 400),
+  mockFetch(
+    () => jsonResponse({ title: 'Bad Request', detail: 'Invalid request content.', errors: [{ field: 'language', defaultMessage: 'size must be between 2 and 2' }] }, 400),
+    'librarian',
   )
   renderAt('/media/new')
 
-  await userEvent.type(screen.getByLabelText(/^Title/), 'X')
+  await userEvent.type(await screen.findByLabelText(/^Title/), 'X')
   await userEvent.type(screen.getByLabelText(/^Creators/), 'Y')
   await userEvent.type(screen.getByLabelText(/^Language/), 'd')
   await userEvent.click(screen.getByRole('button', { name: 'Add to catalog' }))
@@ -41,4 +43,21 @@ test('shows field errors returned by the service', async () => {
   const alert = await screen.findByRole('alert')
   expect(alert).toHaveTextContent('Invalid request content. (HTTP 400)')
   expect(alert).toHaveTextContent('language: size must be between 2 and 2')
+})
+
+test('tells members that only librarians can add media', async () => {
+  mockFetch(() => jsonResponse({}), 'member')
+  renderAt('/media/new')
+  expect(await screen.findByRole('heading', { name: 'Librarians only' })).toBeInTheDocument()
+  expect(screen.queryByLabelText(/^Title/)).not.toBeInTheDocument()
+})
+
+test('explains a 403 from the service in plain words', async () => {
+  // e.g. the librarian role was removed in Keycloak while the page was open
+  mockFetch(() => jsonResponse({ title: 'Forbidden', detail: 'Your account is not allowed to do this.' }, 403), 'librarian')
+  renderAt('/media/new')
+  await userEvent.type(await screen.findByLabelText(/^Title/), 'X')
+  await userEvent.type(screen.getByLabelText(/^Creators/), 'Y')
+  await userEvent.click(screen.getByRole('button', { name: 'Add to catalog' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Only librarians can change the catalog')
 })

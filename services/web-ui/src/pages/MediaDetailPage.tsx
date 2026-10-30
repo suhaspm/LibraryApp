@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router'
 import { catalogApi } from '../api/client'
+import { useMe } from '../auth'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { TYPE_LABELS, formatPrice, humanize, rentalLabel } from '../format'
 
@@ -8,6 +9,7 @@ export function MediaDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { isLibrarian } = useMe()
   const { data: media, error, isPending } = useQuery({ queryKey: ['media', id], queryFn: () => catalogApi.get(id) })
 
   const remove = useMutation({
@@ -59,18 +61,22 @@ export function MediaDetailPage() {
             Buy
           </button>
           <p className="muted small">Renting and buying come with the rental and purchase services.</p>
-          <hr />
-          <p className="muted small">Librarian actions</p>
-          <Link to={`/media/${media.id}/edit`} className="button secondary">
-            Edit
-          </Link>
-          <button
-            className="button danger"
-            disabled={remove.isPending}
-            onClick={() => window.confirm(`Delete "${media.title}" from the catalog?`) && remove.mutate()}
-          >
-            Delete
-          </button>
+          {isLibrarian && (
+            <>
+              <hr />
+              <p className="muted small">Librarian actions</p>
+              <Link to={`/media/${media.id}/edit`} className="button secondary">
+                Edit
+              </Link>
+              <button
+                className="button danger"
+                disabled={remove.isPending}
+                onClick={() => window.confirm(`Delete "${media.title}" from the catalog?`) && remove.mutate()}
+              >
+                Delete
+              </button>
+            </>
+          )}
           {remove.error && <ErrorMessage error={remove.error} />}
         </aside>
       </div>
