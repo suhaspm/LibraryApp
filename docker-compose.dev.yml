@@ -1,5 +1,7 @@
 # Fast local loop, without Kubernetes:
-#   ./gradlew :services:catalog-service:bootJar && docker compose -f docker-compose.dev.yml up --build
+#   ./gradlew :services:catalog-service:bootJar
+#   (cd services/web-ui && npm ci && npm run build)
+#   docker compose -f docker-compose.dev.yml up --build      then open http://localhost:3000
 # Infrastructure added in later weeks (Kafka, Postgres, Keycloak, OpenLDAP, SFTP) joins this file.
 name: mediahub
 
@@ -27,6 +29,16 @@ services:
       resources:
         limits:
           memory: 512m
+
+  web-ui:
+    build:
+      context: services/web-ui
+    ports: ["3000:8080"]
+    depends_on: [catalog-service]
+    # Same restrictions the Kubernetes pod runs with.
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
 
 volumes:
   mongo-data:

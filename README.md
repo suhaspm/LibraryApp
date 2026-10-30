@@ -22,11 +22,13 @@ Decisions and their trade-offs: [docs/adr](docs/adr/README.md).
 |---|---|---|
 | 1 | Monorepo, catalog-service (MongoDB, Testcontainers), Dockerfile, compose, keys lab | Done |
 | 2 | Helm chart, GitOps app-of-apps, CI pipeline, Terraform (kind, Argo CD, GitHub) | Done: needs your repo to run end to end |
+| 2+ | Web UI (React) for the catalog, pulled forward from week 12 | Done |
 | 3+ | See [docs/pdp.md](docs/pdp.md) | Planned |
 
 ## Repository layout
 ```
 services/<name>-service/     Spring Boot services (auto-discovered by Gradle and CI)
+services/web-ui/             React UI, served by nginx, which also proxies /api (docs/adr/0007)
 build-logic/                 Gradle convention plugin shared by all services
 templates/spring-service/    golden-path template, used by scripts/new-service.sh
 deploy/helm/microservice/    one Helm chart for every service
@@ -38,13 +40,18 @@ docs/                        ADRs, labs, runbooks, incident write-ups, PDP, mess
 
 ## Quick start
 
-### 1. Run the catalog locally (needs Java 21 and Docker)
+### 1. Run everything locally (needs Java 21, Node 22 and Docker)
 ```bash
 ./gradlew build                                       # unit + Testcontainers integration tests
 ./gradlew :services:catalog-service:bootJar
+(cd services/web-ui && npm ci && npm run build)
 docker compose -f docker-compose.dev.yml up --build
-curl "localhost:8080/api/v1/media?q=mann"             # Swagger UI: http://localhost:8080/swagger-ui.html
 ```
+- UI: http://localhost:3000
+- API: `curl "localhost:8080/api/v1/media?q=mann"`; Swagger UI: http://localhost:8080/swagger-ui.html
+
+Working on the UI? Run `npm run dev` in `services/web-ui` for instant reloads on http://localhost:3000.
+It forwards `/api` to `localhost:8080`, which can be the compose catalog-service or a `kubectl port-forward`.
 
 ### 2. Put it on GitHub (once)
 The code lives at https://github.com/suhaspm/LibraryApp (the project itself is called MediaHub).
@@ -70,8 +77,9 @@ cd infra/terraform/envs/local
 cp terraform.tfvars.example terraform.tfvars
 terraform init && terraform apply
 kubectl --context kind-mediahub get applications -n argocd
-kubectl --context kind-mediahub -n mediahub port-forward svc/catalog-service 8080:80
+kubectl --context kind-mediahub -n mediahub port-forward svc/web-ui 3000:80
 ```
+Open http://localhost:3000. (Week 3 replaces port-forwards with a gateway on http://localhost.)
 Argo CD UI: `terraform output argocd_ui` prints how to open it.
 
 ### 4. Add a service
