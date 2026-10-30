@@ -1,6 +1,7 @@
 package io.mediahub.catalog.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import io.mediahub.catalog.TestcontainersConfig;
 import io.mediahub.catalog.media.MediaRepository;
@@ -12,6 +13,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 @SpringBootTest
@@ -31,6 +34,9 @@ class MediaApiIT {
              "genres":["thriller","film"],"attributes":{"runtimeMinutes":81},"rentalFee":1.00}
             """;
 
+    /** These tests are about catalog behaviour, so they act as a librarian; SecurityIT covers access rules. */
+    private static final RequestPostProcessor LIBRARIAN = jwt().authorities(new SimpleGrantedAuthority("ROLE_LIBRARIAN"));
+
     @Autowired
     MockMvcTester mvc;
 
@@ -44,7 +50,7 @@ class MediaApiIT {
 
     @Test
     void createsAndReadsMediaWithTypeSpecificAttributes() {
-        var created = mvc.post().uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content(BOOK).exchange();
+        var created = mvc.post().with(LIBRARIAN).uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content(BOOK).exchange();
         assertThat(created).hasStatus(HttpStatus.CREATED);
         String location = created.getResponse().getHeader("Location");
 
@@ -70,7 +76,7 @@ class MediaApiIT {
 
     @Test
     void rejectsInvalidInputWithProblemDetails() {
-        assertThat(mvc.post().uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content("""
+        assertThat(mvc.post().with(LIBRARIAN).uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content("""
                 {"type":"BOOK","title":"","creators":[]}
                 """)).hasStatus(HttpStatus.BAD_REQUEST)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
@@ -79,30 +85,30 @@ class MediaApiIT {
     @Test
     void rejectsDuplicateIdentifier() {
         post(BOOK);
-        assertThat(mvc.post().uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content(BOOK))
+        assertThat(mvc.post().with(LIBRARIAN).uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content(BOOK))
                 .hasStatus(HttpStatus.CONFLICT);
     }
 
     @Test
     void returns404ForUnknownMedia() {
         assertThat(mvc.get().uri("/api/v1/media/does-not-exist")).hasStatus(HttpStatus.NOT_FOUND);
-        assertThat(mvc.delete().uri("/api/v1/media/does-not-exist")).hasStatus(HttpStatus.NOT_FOUND);
+        assertThat(mvc.delete().with(LIBRARIAN).uri("/api/v1/media/does-not-exist")).hasStatus(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void updatesAndDeletes() {
         String location = post(BOOK);
-        assertThat(mvc.put().uri(location).contentType(MediaType.APPLICATION_JSON)
+        assertThat(mvc.put().with(LIBRARIAN).uri(location).contentType(MediaType.APPLICATION_JSON)
                 .content(BOOK.replace("Der Process", "Der Prozess")))
                 .hasStatusOk().bodyJson()
                 .hasPathSatisfying("$.title", v -> v.assertThat().isEqualTo("Der Prozess"));
 
-        assertThat(mvc.delete().uri(location)).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(mvc.delete().with(LIBRARIAN).uri(location)).hasStatus(HttpStatus.NO_CONTENT);
         assertThat(mvc.get().uri(location)).hasStatus(HttpStatus.NOT_FOUND);
     }
 
     private String post(String body) {
-        var result = mvc.post().uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content(body).exchange();
+        var result = mvc.post().with(LIBRARIAN).uri("/api/v1/media").contentType(MediaType.APPLICATION_JSON).content(body).exchange();
         assertThat(result).hasStatus(HttpStatus.CREATED);
         return result.getResponse().getHeader("Location");
     }
